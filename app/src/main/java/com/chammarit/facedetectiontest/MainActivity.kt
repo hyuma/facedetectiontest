@@ -73,53 +73,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             setUpTextureView()
         }
-
-
-
-
-//        //CameraManagerの取得
-//        val mCameraManager = baseContext.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-//        //利用可能なカメラIDのリストを取得
-//        val cameraIdList = mCameraManager.cameraIdList
-//        //用途に合ったカメラIDを設定
-//        var mCameraId: String? = null
-//        for (cameraId in cameraIdList) {
-//            //カメラの向き(インカメラ/アウトカメラ)は以下のロジックで判別可能です。(今回はアウトカメラを使用します)
-//            val characteristics = mCameraManager.getCameraCharacteristics(cameraId)
-//            when (characteristics.get(CameraCharacteristics.LENS_FACING)) {
-//                CameraCharacteristics.LENS_FACING_FRONT -> {
-//                    mCameraId = cameraId
-//                }
-//                CameraCharacteristics.LENS_FACING_BACK -> {}
-//            }
-//        }
-//
-//
-//        var mCameraDevice: CameraDevice? = null
-//
-//        //CameraDevice.StateCallback詳細
-//        val mStateCallback = object : CameraDevice.StateCallback() {
-//            override fun onOpened(cameraDevice: CameraDevice) {
-//                //接続成功時、CameraDeviceのインスタンスを保持させる
-//                mCameraDevice = cameraDevice
-//                //createCameraPreviewSession()    //次フェーズにて説明します。
-//            }
-//
-//            override fun onDisconnected(cameraDevice: CameraDevice) {
-//                //接続切断時、CameraDeviceをクローズし、CameraDeviceのインスタンスをnullにする
-//                cameraDevice.close()
-//                mCameraDevice = null
-//            }
-//
-//            override fun onError(cameraDevice: CameraDevice, error: Int) {
-//                //エラー発生時、CameraDeviceをクローズし、CameraDeviceのインスタンスをnullにする
-//                cameraDevice.close()
-//                mCameraDevice = null
-//            }
-//        }
-//        //CameraDeviceをオープン
-//        mCameraManager.openCamera(mCameraId, mStateCallback, null)
-
         super.onResume()
     }
 

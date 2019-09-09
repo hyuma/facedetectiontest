@@ -22,11 +22,17 @@ class OverlayView @JvmOverloads constructor(
             field = rect
             this.clear()
         }
+
+    var rectColor: Int = Color.RED
+        set(color) {
+            field = color
+            mPaint!!.color = color
+            this.clear()
+        }
     private var mTouchTolerance: Int = 0
 
     init {
         mCanvas = Canvas()
-        //mRect = new Rect(10,10, 200, 200);
         initPaint()
     }
 
@@ -46,8 +52,7 @@ class OverlayView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         canvas.drawColor(BACKGROUND)
         canvas.drawBitmap(bitmap!!, 0f, 0f, null)
-
-        mPaint!!.color = Color.YELLOW
+        mPaint!!.color = rectColor
         if (null != rect) {
             canvas.drawRect(rect!!, mPaint!!)
         }

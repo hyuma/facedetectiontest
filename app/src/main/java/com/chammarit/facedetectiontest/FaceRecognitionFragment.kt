@@ -14,6 +14,7 @@ import android.media.ImageReader
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
+import android.support.v4.app.ActivityCompat
 import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
@@ -84,6 +85,11 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
      * The [android.util.Size] of camera preview.
      */
     private var mPreviewSize: Size? = null
+
+    /**
+     * Face area that user should fit their face
+     */
+    private var mValidFaceArea: Rect? = null
 
     /**
      * [CameraDevice.StateCallback] is called when [CameraDevice] changes its state.
@@ -186,7 +192,6 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
 
         private fun process(result: CaptureResult) {
 
-
             val mode = result.get(CaptureResult.STATISTICS_FACE_DETECT_MODE)
             val faces = result.get(CaptureResult.STATISTICS_FACES)
 
@@ -209,6 +214,12 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
                         rectF.round(uRect)
                         //uRect.set((int) rectF.left, (int) rectF.top, (int) rectF.right, (int) rectF.bottom);
                         Log.i("Test", "Activity rect$i bounds: $uRect")
+
+                        if (isFaceInArea(uRect)){
+                            mOverlayView!!.rectColor = Color.GREEN
+                        } else {
+                            mOverlayView!!.rectColor = Color.RED
+                        }
 
                         activity!!.runOnUiThread {
                             mOverlayView!!.rect = uRect
@@ -277,6 +288,21 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
 
     }
 
+    private fun isFaceInArea(faceArea: Rect): Boolean{
+        return false
+    }
+
+    /**
+     * Returns Area to fit
+     * TODO: modify
+     */
+    private fun getMaxValidFaceArea(previewSize: Size): Rect{
+        return Rect()
+    }
+    private fun getMinValidFaceArea(previewSize: Size): Rect{
+        return Rect()
+    }
+
     /**
      * Shows a [Toast] on the UI thread.
      *
@@ -287,10 +313,8 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
         activity?.runOnUiThread { Toast.makeText(activity, text, Toast.LENGTH_SHORT).show() }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
+                              savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_face_recognition, container, false)
     }
 
@@ -303,7 +327,7 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        mFile = File(activity.getExternalFilesDir(null), "pic.jpg")
+        mFile = File(activity!!.getExternalFilesDir(null), "pic.jpg")
     }
 
     override fun onResume() {
@@ -328,14 +352,11 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
     }
 
     private fun requestCameraPermission() {
-        if (FragmentCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-            ConfirmationDialog().show(childFragmentManager, FRAGMENT_DIALOG)
-        } else {
-            FragmentCompat.requestPermissions(
-                this, arrayOf(Manifest.permission.CAMERA),
-                REQUEST_CAMERA_PERMISSION
-            )
-        }
+        ActivityCompat.requestPermissions(
+            activity!!,
+            arrayOf(Manifest.permission.CAMERA),
+            REQUEST_CAMERA_PERMISSION
+        )
     }
 
     override fun onRequestPermissionsResult(
@@ -407,7 +428,6 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
                     mSensorOrientation =
                         mCameraCharacteristics!!.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
 
-                    Log.e("MEOW", mSensorOrientation.toString())
                     mSwappedDimensions = false
                     when (displayRotation) {
                         Surface.ROTATION_0, Surface.ROTATION_180 -> if (mSensorOrientation == 90 || mSensorOrientation == 270) {
@@ -457,8 +477,8 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
                         rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth,
                         maxPreviewHeight, largest
                     )
-                    Log.e("HOGE", "maxPreviewSize= $maxPreviewHeight,$maxPreviewWidth")
-                    Log.e("HOGE", "maxPreviewSize= $maxPreviewHeight,$maxPreviewWidth")
+
+                    mValidFaceArea = chooseValidFaceArea(mPreviewSize)
 
                     // We fit the aspect ratio of TextureView to the size of preview we picked.
                     val orientation = resources.configuration.orientation
