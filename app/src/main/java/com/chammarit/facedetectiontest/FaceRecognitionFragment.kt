@@ -87,9 +87,11 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
     private var mPreviewSize: Size? = null
 
     /**
-     * Face area that user should fit their face
+     * Face area that user should fill their face
      */
+    private var mMaxValidFaceArea: Rect? = null
     private var mValidFaceArea: Rect? = null
+    private var mMinValidFaceArea: Rect? = null
 
     /**
      * [CameraDevice.StateCallback] is called when [CameraDevice] changes its state.
@@ -191,7 +193,7 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
     private val mCaptureCallback = object : CameraCaptureSession.CaptureCallback() {
 
         private fun process(result: CaptureResult) {
-
+            Log.e(TAG, mState.toString())
             val mode = result.get(CaptureResult.STATISTICS_FACE_DETECT_MODE)
             val faces = result.get(CaptureResult.STATISTICS_FACES)
 
@@ -217,18 +219,27 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
 
                         if (isFaceInArea(uRect)){
                             mOverlayView!!.rectColor = Color.GREEN
-                        } else {
-                            mOverlayView!!.rectColor = Color.RED
                         }
 
+                        Log.i("Valid Area", "FaceArea bounds: $mValidFaceArea")
+                        Log.i("Valid Area", "MinFaceArea bounds: $mMinValidFaceArea")
                         activity!!.runOnUiThread {
-                            mOverlayView!!.rect = uRect
+                            //mOverlayView!!.rect = uRect
+                            mOverlayView!!.rect = mValidFaceArea
                             mOverlayView!!.requestLayout()
                         }
                         break
-                        //}
                     }
+                } else {
+                    mOverlayView!!.rectColor = Color.RED
                 }
+            } else {
+                mOverlayView!!.rectColor = Color.RED
+            }
+            activity!!.runOnUiThread {
+                //mOverlayView!!.rect = uRect
+                mOverlayView!!.rect = mValidFaceArea
+                mOverlayView!!.requestLayout()
             }
 
             when (mState) {
@@ -247,6 +258,8 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
                         } else {
                             runPrecaptureSequence()
                         }
+                    } else if (CaptureResult.CONTROL_AF_STATE_INACTIVE == afState) {
+                        captureStillPicture()// Because front camera doesn't support autofocus
                     }
                 }
                 STATE_WAITING_PRECAPTURE -> {
@@ -289,18 +302,40 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
     }
 
     private fun isFaceInArea(faceArea: Rect): Boolean{
+        if (mValidFaceArea != null) {
+            if (faceArea.left >= mValidFaceArea!!.left && faceArea.left <= mMinValidFaceArea!!.left &&
+                faceArea.top >= mValidFaceArea!!.top && faceArea.top <= mMinValidFaceArea!!.top &&
+                faceArea.right <= mValidFaceArea!!.right && faceArea.right >= mMinValidFaceArea!!.right &&
+                faceArea.bottom <= mValidFaceArea!!.bottom &&  faceArea.bottom >= mMinValidFaceArea!!.bottom
+            ) {
+                return true
+            }
+        }
         return false
     }
 
     /**
-     * Returns Area to fit
-     * TODO: modify
+     * Set Max and Min Valid Face Area
      */
-    private fun getMaxValidFaceArea(previewSize: Size): Rect{
-        return Rect()
-    }
-    private fun getMinValidFaceArea(previewSize: Size): Rect{
-        return Rect()
+    private fun setValidFaceArea(previewHeight:Int, previewWidth:Int){
+        val height = kotlin.math.round(previewHeight *0.55).toInt()
+        val width = kotlin.math.round(previewWidth *0.5).toInt()
+
+        val top = (previewHeight - height)/2
+        val bottom = top + height
+        val left = (previewWidth - width)/2
+        val right = left + width
+
+        val minHeight = kotlin.math.round(height * 0.2).toInt()
+        val minWidth = kotlin.math.round(width * 0.5).toInt()
+        val minTop = (previewHeight - minHeight)/2
+        val minBottom = minTop + minHeight
+        val minLeft = (previewWidth - minWidth)/2
+        val minRight = minLeft + minWidth
+
+
+            mValidFaceArea = Rect(left,top,right,bottom)
+        mMinValidFaceArea = Rect(minLeft,minTop,minRight, minBottom)
     }
 
     /**
@@ -398,7 +433,6 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
             for (cameraId in mCameraManager!!.cameraIdList) {
                 mCameraCharacteristics = mCameraManager!!.getCameraCharacteristics(cameraId)
                 println("cam id $cameraId")
-                // We don't use a front facing camera in this sample.
                 val facing = mCameraCharacteristics!!.get(CameraCharacteristics.LENS_FACING)!!
                 if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
 
@@ -478,7 +512,6 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
                         maxPreviewHeight, largest
                     )
 
-                    mValidFaceArea = chooseValidFaceArea(mPreviewSize)
 
                     // We fit the aspect ratio of TextureView to the size of preview we picked.
                     val orientation = resources.configuration.orientation
@@ -486,10 +519,12 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
                         mTextureView!!.setAspectRatio(
                             mPreviewSize!!.width, mPreviewSize!!.height
                         )
+                        setValidFaceArea(mPreviewSize!!.height, mPreviewSize!!.width)
                     } else {
                         mTextureView!!.setAspectRatio(
                             mPreviewSize!!.height, mPreviewSize!!.width
                         )
+                        setValidFaceArea(mPreviewSize!!.width, mPreviewSize!!.height)
                     }
 
                     // Check if the flash is supported.
@@ -662,6 +697,7 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
                                 CaptureRequest.STATISTICS_FACE_DETECT_MODE,
                                 CameraMetadata.STATISTICS_FACE_DETECT_MODE_SIMPLE
                             )
+
                             // Flash is automatically enabled when necessary.
                             setAutoFlash(mPreviewRequestBuilder)
 
@@ -738,6 +774,7 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
     private fun lockFocus() {
         try {
             // This is how to tell the camera to lock focus.
+            // this doesn't work for front camera
             mPreviewRequestBuilder!!.set(
                 CaptureRequest.CONTROL_AF_TRIGGER,
                 CameraMetadata.CONTROL_AF_TRIGGER_START
