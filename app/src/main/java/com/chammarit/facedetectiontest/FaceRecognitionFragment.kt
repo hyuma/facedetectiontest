@@ -25,6 +25,7 @@ import android.view.*
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.Toast
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -770,7 +771,14 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
      * Initiate a still image capture.
      */
     private fun takePicture() {
-        lockFocus()
+
+        mBackgroundHandler!!.post(
+            ImageSaverBitmap(
+                mTextureView!!.bitmap,
+                mFile!!
+            )
+        )
+        //lockFocus()
     }
 
     /**
@@ -962,6 +970,48 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
                 mImage.close()
                 if (null != output) {
                     try {
+                        output.close()
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+
+                }
+            }
+        }
+
+    }
+
+    /**
+     * Saves a JPEG [Image] into the specified [File].
+     */
+    private class ImageSaverBitmap(
+        /**
+         * The JPEG image
+         */
+        private val mBitmap: Bitmap,
+        /**
+         * The file we save the image into.
+         */
+        private val mFile: File
+    ) : Runnable {
+
+        override fun run() {
+            val stream =  ByteArrayOutputStream();
+            mBitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+            stream.toByteArray()
+            Log.e(TAG, "MEOMEOMEOMOE")
+            val bytes = stream.toByteArray()
+            var output: FileOutputStream? = null
+            try {
+                output = FileOutputStream(mFile)
+                Log.e(TAG, "BYTES SIZE" + bytes.size)
+                output.write(bytes)
+            } catch (e: IOException) {
+                e.printStackTrace()
+            } finally {
+                if (null != output) {
+                    try {
+                        Log.d(TAG, mFile!!.toString())
                         output.close()
                     } catch (e: IOException) {
                         e.printStackTrace()
