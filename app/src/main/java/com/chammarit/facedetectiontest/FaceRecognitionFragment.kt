@@ -447,8 +447,11 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
                         Arrays.asList(*map.getOutputSizes(ImageFormat.JPEG)),
                         CompareSizesByArea()
                     )
+
+                    //TODO: Check existence of proper dimention
                     mImageReader = ImageReader.newInstance(
-                        largest.width, largest.height,
+                        //largest.width, largest.height,
+                        1280,960,
                         ImageFormat.JPEG, /*maxImages*/2
                     )
                     mImageReader!!.setOnImageAvailableListener(
@@ -480,6 +483,8 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
                     Log.e("Y", displaySize.y.toString())
                     Log.e("Width", width.toString())
                     Log.e("Height", height.toString())
+                    Log.e("LargestWidth", largest.width.toString())
+                    Log.e("LargestHeight", largest.height.toString())
                     Log.e("mSwappedDimensions", mSwappedDimensions.toString())
                     var rotatedPreviewWidth = width
                     var rotatedPreviewHeight = height
